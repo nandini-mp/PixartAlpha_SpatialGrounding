@@ -1,0 +1,46 @@
+seed: 42
+
+data:
+  coco_root: "data/coco"
+  annotations: "data/coco/annotations/instances_train2017.json"
+  image_root: "data/coco/train2017"
+  total_samples: 25000
+  train_samples: 20000
+  val_samples: 2500
+  test_samples: 2500
+  min_objects: 2
+  max_objects: 6
+
+relations:
+  left_right_threshold: 0.20
+  above_below_threshold: 0.20
+  overlap_iou_threshold: 0.10
+  near_distance_threshold: 0.15
+
+model:
+  hidden_dim: 256
+  num_gnn_layers: 3
+  num_heads: 4
+  dropout: 0.10
+  text_encoder: "openai/clip-vit-base-patch32"
+  relation_embedding_dim: 64
+
+training:
+  batch_size: 16
+  epochs: 30
+  learning_rate: 0.0003
+  weight_decay: 0.01
+  num_workers: 4
+  mixed_precision: true
+
+parser:
+  model_name: "t5-small"
+  max_input_length: 128
+  max_output_length: 256
+  learning_rate: 0.0003
+  epochs: 10
+
+paths:
+  checkpoints: "checkpoints"
+  logs: "logs"
+  outputs: "outputs"

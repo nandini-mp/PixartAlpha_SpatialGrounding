@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+
+data/coco/
+data/raw/
+data/processed/
+
+checkpoints/
+logs/
+outputs/
+
+.env
+*.log
