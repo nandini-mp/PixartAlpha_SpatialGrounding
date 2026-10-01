@@ -1,65 +1,89 @@
+"""Verify GPU, PyTorch, AMP, and key libraries."""
+
 import sys
+import time
+from pathlib import Path
 
-print("=" * 60)
-print("Spatial Grounding Environment Check")
-print("=" * 60)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-# Python
-print(f"\nPython: {sys.version}")
+import torch
+from src.utils import load_config, set_seed, get_device
 
-# PyTorch
-try:
-    import torch
+ok = True
 
-    print(f"PyTorch: {torch.__version__}")
-    print(f"CUDA available: {torch.cuda.is_available()}")
+print(f"Python        : {sys.version.split()[0]}")
+print(f"PyTorch       : {torch.__version__}")
+print(f"CUDA (torch)  : {torch.version.cuda}")
+print(f"CUDA available: {torch.cuda.is_available()}")
 
-    if torch.cuda.is_available():
-        print(f"CUDA version: {torch.version.cuda}")
-        print(f"GPU: {torch.cuda.get_device_name(0)}")
-        print(
-            f"GPU memory: "
-            f"{torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB"
-        )
+cfg = load_config()
+set_seed(cfg["seed"])
+dev = get_device()
 
-        # Small GPU computation
-        x = torch.randn(1000, 1000, device="cuda")
-        y = torch.matmul(x, x)
-        torch.cuda.synchronize()
+print(f"Device        : {dev}")
 
-        print("GPU computation: PASS")
-        del x, y
-        torch.cuda.empty_cache()
+if dev.type == "cuda":
+    props = torch.cuda.get_device_properties(0)
+    free, total = torch.cuda.mem_get_info()
+
+    print(f"GPU           : {props.name}")
+    print(f"VRAM          : {total/1e9:.1f} GB total, {free/1e9:.1f} GB free")
+
+    # AMP test
+    a = torch.randn(4096, 4096, device=dev)
+    b = torch.randn(4096, 4096, device=dev)
+
+    with torch.autocast("cuda", dtype=torch.float16):
+        c = a @ b
+
+    if c.dtype == torch.float16:
+        print("AMP OK")
     else:
-        print("GPU computation: SKIPPED")
+        print("AMP FAILED")
+        ok = False
 
-except Exception as e:
-    print(f"PyTorch check failed: {e}")
+    # Matmul benchmark
+    ah, bh = a.half(), b.half()
 
-# Other packages
-packages = [
-    "numpy",
-    "scipy",
+    torch.cuda.synchronize()
+    t = time.time()
+
+    for _ in range(20):
+        _ = ah @ bh
+
+    torch.cuda.synchronize()
+    dt = (time.time() - t) / 20
+
+    print(
+        f"fp16 4096^2 matmul: "
+        f"{dt*1000:.2f} ms  "
+        f"(~{2*4096**3/dt/1e12:.1f} TFLOPS)"
+    )
+
+else:
+    print("WARNING: no GPU visible to PyTorch. Training will be very slow.")
+    ok = False
+
+
+for mod in [
     "transformers",
     "sentencepiece",
-    "PIL",
-    "pycocotools",
     "yaml",
+    "numpy",
+    "PIL",
     "matplotlib",
     "tqdm",
-    "accelerate",
-    "safetensors",
-]
-
-print("\nPackage checks:")
-
-for package in packages:
+    "pycocotools",
+    "scipy",
+    "pytest",
+]:
     try:
-        __import__(package)
-        print(f"  {package}: OK")
+        m = __import__(mod)
+        print(f"{mod:14s}: OK ({getattr(m, '__version__', '?')})")
     except Exception as e:
-        print(f"  {package}: FAILED ({e})")
+        print(f"{mod:14s}: MISSING ({e})")
+        ok = False
 
-print("\n" + "=" * 60)
-print("Environment check complete")
-print("=" * 60)
+
+print("ENV CHECK PASSED" if ok else "ENV CHECK FAILED")
+sys.exit(0 if ok else 1)

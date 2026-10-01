@@ -1,46 +1,56 @@
+# Central configuration. All paths are relative to the project root.
 seed: 42
 
+paths:
+  data_dir: data
+  download_dir: data/download
+  coco_dir: data/coco
+  processed_dir: data/processed
+  splits_dir: data/splits
+  checkpoints_dir: checkpoints
+  outputs_dir: outputs
+
 data:
-  coco_root: "data/coco"
-  annotations: "data/coco/annotations/instances_train2017.json"
-  image_root: "data/coco/train2017"
-  total_samples: 25000
-  train_samples: 20000
-  val_samples: 2500
-  test_samples: 2500
+  coco_year: 2017
+  num_samples: 25000
+  split: {train: 20000, val: 2500, test: 2500}
   min_objects: 2
   max_objects: 6
+  min_box_area_frac: 0.01
+  skip_crowd: true
 
 relations:
-  left_right_threshold: 0.20
-  above_below_threshold: 0.20
-  overlap_iou_threshold: 0.10
-  near_distance_threshold: 0.15
+  margin: 0.02
+  near_dist: 0.25
+  far_dist: 0.60
+  overlap_iou: 0.05
+  inside_frac: 0.90
+  max_relations_per_image: 6
+
+loss:
+  lambda_l1: 1.0
+  lambda_giou: 1.0
+  lambda_rel: 0.2
+  rel_margin: 0.02
 
 model:
+  gnn_layers: 3
   hidden_dim: 256
-  num_gnn_layers: 3
-  num_heads: 4
-  dropout: 0.10
-  text_encoder: "openai/clip-vit-base-patch32"
-  relation_embedding_dim: 64
+  heads: 4
+  text_encoder: openai/clip-vit-base-patch32
 
-training:
-  batch_size: 16
-  epochs: 30
-  learning_rate: 0.0003
+train:
+  lr: 0.0003
   weight_decay: 0.01
-  num_workers: 4
-  mixed_precision: true
+  batch_size: 128
+  epochs: 40
+  grad_clip: 1.0
+  amp: true
 
 parser:
-  model_name: "t5-small"
-  max_input_length: 128
-  max_output_length: 256
-  learning_rate: 0.0003
+  model_name: t5-small
+  max_source_len: 128
+  max_target_len: 128
+  lr: 0.0005
+  batch_size: 64
   epochs: 10
-
-paths:
-  checkpoints: "checkpoints"
-  logs: "logs"
-  outputs: "outputs"

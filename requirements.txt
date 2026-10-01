@@ -1,13 +1,14 @@
-numpy
-scipy
+# torch/torchvision are installed separately
+numpy==1.26.4
+scipy==1.13.1
 transformers==4.44.2
-sentencepiece
-protobuf
-pyyaml
-pillow
-matplotlib
-tqdm
-pycocotools
-pytest
-accelerate
-safetensors
+sentencepiece==0.2.0
+protobuf==4.25.3
+pyyaml==6.0.2
+pillow==10.4.0
+matplotlib==3.9.2
+tqdm==4.66.5
+pycocotools==2.0.8
+pytest==8.3.3
+accelerate==0.34.2
+safetensors==0.4.5
