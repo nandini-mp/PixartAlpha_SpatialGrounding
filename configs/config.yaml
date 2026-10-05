@@ -12,6 +12,7 @@ paths:
 
 data:
   coco_year: 2017
+  annotations_url: http://images.cocodataset.org/annotations/annotations_trainval2017.zip
   num_samples: 25000
   split: {train: 20000, val: 2500, test: 2500}
   min_objects: 2
@@ -26,6 +27,11 @@ relations:
   overlap_iou: 0.05
   inside_frac: 0.90
   max_relations_per_image: 6
+  p_connected: 0.5
+  extra_edge_prob: 0.3
+  secondary_prob: 0.25
+  between_prob: 0.15
+  between_perp_tol: 0.25
 
 loss:
   lambda_l1: 1.0
@@ -49,8 +55,32 @@ train:
 
 parser:
   model_name: t5-small
-  max_source_len: 128
-  max_target_len: 128
+  max_source_len: 256
+  max_target_len: 256
   lr: 0.0005
   batch_size: 64
   epochs: 10
+
+prompts:
+  size_small_area: 0.05
+  size_large_area: 0.25
+  style_weights: {sentences: 0.4, comma: 0.4, semicolon: 0.2}
+  variants_per_image: {train: 1, val: 1, test: 1}
+
+parser_train:
+  bf16: true
+  warmup_ratio: 0.05
+  weight_decay: 0.01
+  grad_clip: 1.0
+  eval_batch_size: 128
+  num_beams_val: 1
+  num_beams_final: 4
+  select_metric: struct_exact
+
+layout_loss:
+  w_l1: 1.0
+  w_giou: 1.0
+  w_rel: 0.5
+  margin: 0.02
+  near_dist: 0.35
+  far_dist: 0.5
