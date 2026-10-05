@@ -28,7 +28,7 @@ class LayoutModel(nn.Module):
         boxes, deltas = feat.new_zeros(N, 4), feat.new_zeros(N, 4)
 
         a_idx = (depth == 0).nonzero(as_tuple=True)[0]                  # all component anchors
-        boxes = boxes.index_put((a_idx,), self.anchor(feat[a_idx]))
+        boxes = boxes.index_put((a_idx,), self.anchor(feat[a_idx]).to(boxes.dtype))
 
         for d in range(1, int(depth.max()) + 1):                         # one batch per BFS level
             idx = (depth == d).nonzero(as_tuple=True)[0]
@@ -39,6 +39,6 @@ class LayoutModel(nn.Module):
                 pbox = torch.where(use, gt_boxes[par], pbox)
                 abox = torch.where(use, gt_boxes[anc], abox)
             delta, box = self.nonanchor(rel[idx], abox[:, :2], feat[idx], pbox, feat[par])
-            boxes = boxes.index_put((idx,), box)
-            deltas = deltas.index_put((idx,), delta)
+            boxes = boxes.index_put((idx,), box.to(boxes.dtype))
+            deltas = deltas.index_put((idx,), delta.to(deltas.dtype))
         return {"boxes": boxes, "deltas": deltas, "feat": feat}

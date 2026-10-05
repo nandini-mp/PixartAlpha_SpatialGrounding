@@ -56,12 +56,14 @@ def relation_terms(boxes, cons, cfg):
         elif rel == "ABOVE":
             v = F.relu(s[:, 1] - d[:, 1] + m)
         elif rel == "INSIDE":
-            v = (F.relu(dx[:, 0] - sx[:, 0]) + F.relu(dx[:, 1] - sx[:, 1])
-                 + F.relu(sx[:, 2] - dx[:, 2]) + F.relu(sx[:, 3] - dx[:, 3]))
+            sl = cfg.get("inside_slack", 0.0)          # GT containment is tolerance-based
+            v = (F.relu(dx[:, 0] - sx[:, 0] - sl) + F.relu(dx[:, 1] - sx[:, 1] - sl)
+                 + F.relu(sx[:, 2] - dx[:, 2] - sl) + F.relu(sx[:, 3] - dx[:, 3] - sl))
         elif rel == "OVERLAP":
             ow = torch.min(sx[:, 2], dx[:, 2]) - torch.max(sx[:, 0], dx[:, 0])
             oh = torch.min(sx[:, 3], dx[:, 3]) - torch.max(sx[:, 1], dx[:, 1])
-            v = F.relu(m - ow) + F.relu(m - oh)
+            om = cfg.get("overlap_margin", m)
+            v = F.relu(om - ow) + F.relu(om - oh)
         else:
             dist = torch.sqrt(((s[:, :2] - d[:, :2]) ** 2).sum(-1) + 1e-12)
             v = F.relu(dist - cfg["near_dist"]) if rel == "NEAR" else F.relu(cfg["far_dist"] - dist)
